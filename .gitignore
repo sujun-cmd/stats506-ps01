@@ -1,0 +1,12 @@
+.DS_Store
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+.quarto/
+ps01_files/
+ps01_cache/
+*.knit.md
+*.utf8.md
+*~
+*.swp

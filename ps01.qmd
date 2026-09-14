@@ -1,0 +1,360 @@
+---
+title: "Problem Set #1 STATS 506"
+author: "Jun Su"
+format:
+  html:
+    embed-resources: true
+    code-fold: true
+---
+
+### Q1
+
+## a.Import the data
+
+```{r}
+
+soy <- read.csv("data/data.csv")
+
+ 
+names(soy) <- c("Season", "Cultivar", "Repetition",
+                "PH", "IFP", "NLP", "NGP",
+                "NGL", "NS", "MHG", "GY") #Change the names accordingly
+
+head(soy)
+```
+The dataset was imported from data.csv, and the variables were named according to the dataset documentation.
+
+## b. verification
+
+```{r}
+#Number of observations
+num_of_obs<-dim(soy)[1]
+num_of_obs
+#Number of distinct cultivars
+length(unique(soy$Cultivar))
+
+#Distinct seasons
+unique(soy$Season)
+
+#Number of observations in each season
+table(soy$Season)
+```
+The dataset contains 320 observations, which represent 40 distinct soybean cultivars. The observations were collected during two unique seasons. Both have 160 observations
+
+## c.(1) Find the correlation between PH and GY
+```{r}
+cor_PH_GY <- cor(soy$PH, soy$GY)
+cor_PH_GY
+```
+The correlation is between plant height and grain yield 0.1232807, a positive association but not very high.
+
+## c.(2) Find the correlation between PH and GY for each unique season.
+```{r}
+cor_season1 <- cor(
+  soy$PH[soy$Season == 1],
+  soy$GY[soy$Season == 1]
+)
+
+cor_season2 <- cor(
+  soy$PH[soy$Season == 2],
+  soy$GY[soy$Season == 2]
+)
+
+cor_season1
+cor_season2
+```
+The correlation for season 1 yield 0.2308581, a positive association. However, the correlation for season 2 yield -0.0227046, which indicates a very weak negative correlation. Season 1 has a higher correlation.
+
+## c. (3) The grain yield of the soybean observation with the greatest plant height
+```{r}
+soy_high<- soy[order(soy$PH, decreasing = TRUE), ]
+soy_high[1,]$GY
+```
+The grain yield of the soybean observation with the greatest plant height is 3304.678
+
+## c. (4) Percentage of observations that have a thousand seed weight (MHG) greater than the overall average thousand seed weight
+```{r}
+avg_MHG <- mean(soy$MHG)
+avg_MHG
+heavy_soy <- soy[soy$MHG > avg_MHG,]
+perc_larger_weight <- dim(heavy_soy)[1]/num_of_obs *100
+perc_larger_weight
+```
+The percentage of observations that have a thousand seed weight (MHG) greater than the overall average thousand seed weight is 47.1875%.
+
+## c. (5) cultivar with the highest average grain yield
+```{r}
+avg_GY_by_cultivar <- aggregate(GY ~ Cultivar,
+                                data = soy,
+                                FUN = mean)
+highest_GY_cultivar <- avg_GY_by_cultivar[order(avg_GY_by_cultivar$GY,decreasing = TRUE),][1,]
+highest_GY_cultivar
+```
+The cultivar with the highest average grain yield is 98R30 CE with an average GY of 3964.968.
+
+## d. create a table
+```{r}
+quant_vars <- c(
+  "PH", "IFP", "NLP", "NGP",
+  "NGL", "NS", "MHG", "GY"
+)
+quant_vars
+```
+These are quantitative variables: "PH"  "IFP" "NLP" "NGP" "NGL" "NS"  "MHG" "GY" 
+```{r}
+overall_avg <- colMeans(soy[quant_vars])
+
+overall_avg
+season1_avg <- colMeans(
+  soy[soy$Season == 1, quant_vars]
+)
+
+season1_avg
+season2_avg <- colMeans(
+  soy[soy$Season == 2, quant_vars]
+)
+
+season2_avg
+final_table <- rbind(overall_avg,season1_avg,season2_avg)
+final_table
+```
+
+## e. t-test
+First, define my own t test function
+```{r}
+#' Compute a two-sample t-test manually
+#'
+#' @param x,y 2 arrays containing the observations from the two groups.
+#' @return A named numeric vector containing the sample means of x and y, t statistic, degrees of freedom,
+#'   and p-value.
+my_t_test <- function(x, y) {
+  
+  # sample sizes
+  n1 <- length(x)
+  n2 <- length(y)
+  
+  # sample means
+  mean1 <- mean(x)
+  mean2 <- mean(y)
+  
+  # sample var 
+  var1 <- var(x)
+  var2 <- var(y)
+  
+  # standard error
+  SE <- sqrt(var1 / n1 + var2 / n2)
+  
+  # t statistic
+  t <- (mean1 - mean2) / SE
+  
+  # dof
+  df <- (var1 / n1 + var2 / n2)^2 /
+        ((var1 / n1)^2 / (n1 - 1) +
+         (var2 / n2)^2 / (n2 - 1))
+  
+  # p value
+  pv <- 2 * pt(-abs(t), df = df) # look up the table and gives the 2 sided p value
+  
+  # results
+  return(c(
+    mean_1 = mean1,
+    mean_2 = mean2,
+    t_statistic = t,
+    df = df,
+    p_value = pv
+  ))
+}
+```
+
+```{r}
+GY_1 <- soy$GY[soy$Season == 1]
+GY_2 <- soy$GY[soy$Season == 2]
+my_t_test(GY_1, GY_2)
+```
+
+
+We test
+\(H_0: \mu_1 = \mu_2\), meaning that the mean grain yield is equal between the two seasons,
+against
+\(H_A: \mu_1 \neq \mu_2\), meaning that the mean grain yield differs between the two seasons.
+Our p value is  0.725498>0.05, fail to reject H0. There is insufficient evidence that the mean grain yield differs between the 2 seasons.
+
+### Q2
+
+## a & b. load the data and clean the names
+
+
+```{r}
+adult <- read.csv(
+  "data/adult.data",
+  header = FALSE,
+  strip.white = TRUE,
+  na.strings = "?"
+ )
+
+names(adult) <- c(
+  "age",
+  "workclass",
+  "final_weight",
+  "education_level",
+  "education_years",
+  "marital_status",
+  "occupation",
+  "relationship",
+  "race",
+  "sex",
+  "capital_gain",
+  "capital_loss",
+  "hours_per_week",
+  "native_country",
+  "income"
+)
+ 
+head(adult)
+```
+The Adult Income data were imported without a header, with surrounding whitespace removed and `?` treated as missing. The 15 columns were assigned the names shown above.
+
+## c 
+```{r}
+for(name in names(adult)){
+print(c(name,sum(is.na(adult[[name]]))))
+}
+```
+There are 0 missing values in "age", 1836 missing values in "workclass", 0 missing values in "final_weight", 0 missing values in "education_level", 0 missing values in "education_years", 0 missing values in "marital_status", 1843 missing values in "occupation", 0 missing values in "relationship", 0 missing values in "race", 0 missing values in "sex", 0 missing values in "capital_gain", 0 missing values in "capital_loss", 0 missing values in "hours_per_week", 583 missing values in "native_country", and 0 missing values in "income".
+
+## d
+
+```{r}
+sample_size_ori <- dim(adult)[1]
+sample_size_ori
+adult_long_work <- adult[adult$hours_per_week >= 10,]
+sample_size_long <- dim(adult_long_work)[1]
+sample_size_long
+
+```
+The original sample size is 32561, while the sample size of individuals working at least 10 hours per week is 32103.
+
+## e
+
+```{r}
+adult_na_removed <- adult_long_work[
+  !is.na(adult_long_work$workclass) &
+  !is.na(adult_long_work$occupation) &
+  !is.na(adult_long_work$native_country),
+]
+colSums(is.na(adult_na_removed[c("occupation", "workclass", "native_country")]))
+```
+Observations with missing values in occupation, workclass, or native_country were removed because these observations do not provide usable information for analyses involving those variables.
+
+## f
+
+```{r}
+real_adult <- adult_na_removed[
+  adult_na_removed$age >= 18 &
+  adult_na_removed$age <= 90 &
+  adult_na_removed$education_level != "Preschool",
+]
+range(real_adult$age)
+sum(real_adult$education_level == "Preschool")
+```
+The retained observations have ages from 18 through 90, inclusive, and exclude the Preschool education category.
+
+## g
+
+```{r}
+final_sample_size <- dim(real_adult)[1]
+final_sample_size
+```
+The final sample size is 29523.
+
+### Q3
+
+```{r}
+#' Compute the next value in a happy-number sequence
+#'
+#' @param n A single positive integer.
+#' @return A positive integer equal to the sum of the squared digits of n.
+nextHappy <- function(n) {
+  if (
+  length(n) != 1 ||
+  !is.numeric(n) ||
+  is.na(n) ||
+  !is.finite(n) ||
+  n <= 0 ||
+  n %% 1 != 0
+) {
+  stop("n must be a single positive integer.")
+}
+  x <- as.character(n)
+  digits <- as.numeric(strsplit(x, "")[[1]])
+  sum(digits^2)
+}
+#' Compute the full happy-number sequence
+#'
+#' @param n A single positive integer.
+#' @return the sequence array and whether this is a happy number
+happySequence <- function(n) {
+  if (
+  length(n) != 1 ||
+  !is.numeric(n) ||
+  is.na(n) ||
+  !is.finite(n) ||
+  n <= 0 ||
+  n %% 1 != 0
+) {
+  stop("n must be a single positive integer.")
+}
+  isHappy <- TRUE
+  res <- c(n)
+  
+  while (n != 1) {
+    n <- nextHappy(n)
+    
+    if (n %in% res) {
+      res <- c(res, n)
+      isHappy <- FALSE
+      break
+    }
+    
+    res <- c(res, n)
+  }
+  
+  return(list(
+    sequence = res,
+    isHappy = isHappy
+  ))
+}
+results <- lapply(1:1000, happySequence)
+
+isHappy <- sapply(results, function(x) x$isHappy)
+seqLen <- sapply(results, function(x) length(x$sequence))
+# 1. number of happy
+numHappy <- sum(isHappy)
+
+# 2. percentage of happy
+perHappy <- numHappy/1000 * 100
+
+# 3. starting value with longest sequence
+maxLen <- max(seqLen[isHappy])
+maxIndex <- which(isHappy & seqLen == maxLen)
+
+#Test cases required:
+nextHappy(19)
+nextHappy(82)
+happySequence(19)$sequence
+happySequence(19)$isHappy
+happySequence(4)$isHappy
+#c
+numHappy
+perHappy
+maxIndex
+maxLen
+```
+All test cases passed. Among 1 to 1000, there're 143 happy numbers, which is 14.3%.
+The maximum happy-sequence length is 7. Multiple starting values are tied for the longest happy sequence. They are: 356 365 379 397 469 496 536 563 635 649 653 694 739 793 899 937 946 964 973 989 998.
+
+## Attribution of Sources
+
+OpenAI ChatGPT was used to review my draft against the assignment
+requirements and to explain the help documents. I wrote, reviewed, and verified the final code
+myself.
