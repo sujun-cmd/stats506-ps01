@@ -124,7 +124,7 @@ First, define my own t test function
 ```{r}
 #' Compute a two-sample t-test manually
 #'
-#' @param x,y 2 arrays containing the observations from the two groups.
+#' @param x,y 2 vectors containing the observations from the two groups.
 #' @return A named numeric vector containing the sample means of x and y, t statistic, degrees of freedom,
 #'   and p-value.
 my_t_test <- function(x, y) {
@@ -341,9 +341,9 @@ maxIndex <- which(isHappy & seqLen == maxLen)
 #Test cases required:
 nextHappy(19)
 nextHappy(82)
-happySequence(19)$sequence
-happySequence(19)$isHappy
-happySequence(4)$isHappy
+happySequence(19) 
+ 
+happySequence(4) 
 #c
 numHappy
 perHappy
